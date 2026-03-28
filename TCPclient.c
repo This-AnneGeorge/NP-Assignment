@@ -36,13 +36,13 @@ int main() {
         return 1;
     }
 
-    // Setup server address
+    // Setup server
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
     server.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    // Connect to server
-    if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
+    // Connect
+    if (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
         printf("Connection failed\n");
         return 1;
     }
@@ -62,11 +62,11 @@ int main() {
         }
 
         double now = get_time();
-        double rtt = (now - send_time) * 1000; // convert to ms
+        double rtt = (now - send_time) * 1000; // ms
 
         printf("Latency: %.3f ms\n", rtt);
 
-        Sleep(1000); // 1 second delay
+        Sleep(1000);
     }
 
     closesocket(sock);
