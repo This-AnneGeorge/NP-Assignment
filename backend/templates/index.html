@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Latency Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 10px auto;
+            width: 300px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007BFF;
+        }
+
+        canvas {
+            max-width: 600px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📡 Live Latency Monitor</h1>
+
+    <div class="card">
+        Current: <div class="value" id="current">0 ms</div>
+    </div>
+
+    <div class="card">
+        Average: <div class="value" id="avg">0 ms</div>
+    </div>
+
+    <div class="card">
+        Min: <div class="value" id="min">0 ms</div>
+    </div>
+
+    <div class="card">
+        Max: <div class="value" id="max">0 ms</div>
+    </div>
+
+    <canvas id="latencyChart"></canvas>
+</div>
+
+<script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
+<script>
+let values = [];
+let labels = [];
+
+var socket = io();
+
+// 🔥 Chart setup
+const ctx = document.getElementById('latencyChart').getContext('2d');
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Latency (ms)',
+            data: values,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.2
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: {
+                title: { display: true, text: 'Time (s)' }
+            },
+            y: {
+                title: { display: true, text: 'Latency (ms)' }
+            }
+        }
+    }
+});
+
+let count = 0;
+
+socket.on('latency', function(data) {
+    let val = data.value;
+
+    values.push(val);
+    labels.push(count++);
+
+    // limit points (avoid lag)
+    if (values.length > 20) {
+        values.shift();
+        labels.shift();
+    }
+
+    let avg = values.reduce((a,b)=>a+b,0)/values.length;
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+
+    document.getElementById("current").innerText = val.toFixed(2) + " ms";
+    document.getElementById("avg").innerText = avg.toFixed(2) + " ms";
+    document.getElementById("min").innerText = min.toFixed(2) + " ms";
+    document.getElementById("max").innerText = max.toFixed(2) + " ms";
+
+    chart.update();
+});
+</script>
+
+</body>
+</html>
