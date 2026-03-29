@@ -1,204 +1,309 @@
-# Web-Based Network Latency Tester (TCP + WebSocket)
 
-## 📌 Overview
 
-This project implements a **Web-Based Network Latency Tester** that measures **round-trip time (RTT)** between a TCP client and server using timestamped packets. The latency results are streamed in real-time to a web interface using WebSockets.
+# 🚨 First — What you ACTUALLY need to submit
 
-The system demonstrates:
+From your assignment instructions:
 
-* TCP socket programming in C
-* Concurrent client handling
-* Socket option configuration
-* Database logging of latency metrics
-* Real-time visualization via WebSockets
-* Basic secure communication
+
+You need **TWO things**:
+
+## 📄 FISAC-1 (PDF – handwritten)
+
+Must include:
+
+* Theory (TCP lifecycle, WebSocket handshake)
+* Architecture diagram
+* Screenshots (VERY IMPORTANT)
+* Analysis (socket options, performance)
+* Team contributions
+
+## 💻 FISAC-2 (ZIP)
+
+* Full working code
+* Must be runnable
+* Dynamic inputs (NOT hardcoded)
 
 ---
 
-## 🧠 System Architecture
+# ⚠️ Biggest mistake to avoid
+
+Your current code + plan is:
+
+✔ Good idea
+❌ Too low-level + incomplete for marks
+
+👉 If you continue blindly, you’ll:
+
+* waste time fixing C issues
+* still lose marks in theory + UI + analysis
+
+---
+
+# ✅ FINAL TECH STACK (use this — don’t overthink)
+
+### 🔥 Recommended (BEST for marks + speed)
+
+| Component        | Tech                       |
+| ---------------- | -------------------------- |
+| TCP Server       | C (keep your current work) |
+| WebSocket Server | Python (Flask-SocketIO)    |
+| Frontend         | HTML + JS                  |
+| Database         | SQLite                     |
+| OS               | Linux (or WSL)             |
+
+👉 Why this works:
+
+* You satisfy **“TCP in C” requirement**
+* You avoid building WebSockets in C (painful)
+* Python handles real-time easily
+
+---
+
+# 🔧 SYSTEM ARCHITECTURE (final version)
 
 ```
-TCP Client → TCP Server → WebSocket Bridge → Web Interface
-                    ↓
-                 Database
-```
-
----
-
-## ⚙️ Features
-
-### 1. TCP Latency Measurement
-
-* Client sends timestamp to server
-* Server echoes it back immediately
-* Client calculates RTT:
-
-  ```
-  RTT = current_time - sent_time
-  ```
-
----
-
-### 2. Concurrent TCP Server
-
-* Handles multiple clients using threads
-* Uses high-resolution timers for accuracy
-
----
-
-### 3. Real-Time Web Interface
-
-* WebSocket-based communication
-* Displays:
-
-  * Current latency
-  * Average latency
-  * Minimum and maximum latency
-
----
-
-### 4. Socket Optimization
-
-Configured socket options:
-
-* `SO_REUSEADDR`
-* `SO_RCVBUF`
-* `SO_SNDBUF`
-* `TCP_NODELAY`
-* `SO_KEEPALIVE`
-* Timeout settings
-
----
-
-### 5. Database Logging
-
-* Stores latency values with timestamps
-* Enables performance analysis
-
----
-
-### 6. Basic Security
-
-* Simple authentication mechanism
-* Secure communication using HTTPS/WSS (basic setup)
-
----
-
-## 📁 Project Structure
-
-```
-project/
-│
-├── tcp/
-│   ├── server.c
-│   └── client.c
-│
-├── websocket/
-│   ├── bridge.py
-│   └── index.html
-│
-├── backend/
-│   ├── database.c
-│   └── schema.sql
-│
-├── .gitignore
-└── README.md
+TCP Client (C)
+        ↓
+TCP Server (C)  ---> SQLite DB
+        ↓
+Python WebSocket Bridge
+        ↓
+Web Browser UI (HTML/JS)
 ```
 
 ---
 
-## 🚀 Setup & Execution
+# 🧑‍🤝‍🧑 WORK DIVISION (3 PEOPLE)
 
-### 1. Compile TCP Programs
+## 👨‍💻 Person 1 — TCP + Core Logic (MOST IMPORTANT)
 
-Run in terminal:
+### Tasks:
 
+* Fix your current code
+* Add:
+
+  * socket options
+  * concurrency improvements
+  * error handling
+* Make inputs dynamic (IP, port, interval)
+
+### Deliverables:
+
+* server.c
+* client.c
+
+---
+
+## 👩‍💻 Person 2 — WebSocket + UI
+
+### Tasks:
+
+* Python WebSocket server
+* Receive latency data
+* Broadcast to UI
+* Build frontend:
+
+  * current latency
+  * avg/min/max
+
+---
+
+## 👨‍💻 Person 3 — Database + Security + Analysis
+
+### Tasks:
+
+* SQLite integration
+* Store latency values
+* Add simple login system
+* Run experiments:
+
+  * with/without TCP_NODELAY
+  * multiple clients
+* Prepare graphs/screenshots
+
+---
+
+# 🔧 FIX YOUR CURRENT CODE (IMPORTANT)
+
+## ❌ Problems:
+
+* Windows-only → risky
+* No socket options
+* No partial recv handling
+
+---
+
+## ✅ Minimum fixes you MUST add
+
+### Add socket options in server:
+
+```c
+int opt = 1;
+setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+int flag = 1;
+setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
 ```
-gcc tcp/server.c -o server -lpthread
-gcc tcp/client.c -o client
+
+---
+
+### Fix recv (important concept)
+
+TCP is stream-based — not guaranteed full read.
+
+```c
+int total = 0;
+while (total < sizeof(double)) {
+    int n = recv(sock, ((char*)&timestamp) + total, sizeof(double) - total, 0);
+    if (n <= 0) break;
+    total += n;
+}
 ```
 
 ---
 
-### 2. Run Server
+### Make client dynamic
 
-```
-./server
-```
+Take input:
 
----
-
-### 3. Run Client
-
-```
-./client
-```
+* server IP
+* number of requests
+* interval
 
 ---
 
-### 4. Start WebSocket Bridge
+# 🌐 WEB SOCKET BRIDGE (simple version)
 
-```
-python websocket/bridge.py
-```
+Python (don’t overcomplicate):
 
----
-
-### 5. Open Web Interface
-
-Open in browser:
-
-```
-http://localhost:5000
-```
+* Read latency from TCP (or simulate initially)
+* Broadcast using WebSocket
 
 ---
 
-## 🧪 Testing
+# 🧠 THEORY (YOU WILL WRITE THIS IN PDF)
 
-* Run multiple clients simultaneously to test concurrency
-* Modify socket options and observe latency changes
-* Disconnect clients to test fault handling
+## ✍️ 1. TCP Socket Lifecycle
 
----
+Write this EXACT structure:
 
-## 📊 Observations
+* **Connection Establishment**
 
-* TCP ensures reliable data transmission for accurate RTT measurement
-* WebSockets enable real-time updates without repeated TCP handshakes
-* Socket options significantly affect latency and responsiveness
-* Database logging introduces slight overhead
-* Secure communication may slightly increase latency
+  * SYN → SYN-ACK → ACK
 
----
+* **Data Transfer**
 
-## 👥 Team Contributions
+  * Reliable, ordered delivery
 
-### Person 1 – TCP & Latency Measurement
+* **Connection Termination**
 
-* Implemented TCP client-server communication
-* Designed RTT calculation using timestamps
-* Handled concurrent client connections
+  * FIN → ACK → FIN → ACK
+  * TIME_WAIT state
 
 ---
 
-### Person 2 – WebSocket & Web Interface
+## ✍️ 2. WebSocket Handshake
 
-* Built WebSocket bridge for real-time data streaming
-* Developed web interface for latency visualization
+* Starts as HTTP request
+* Contains:
 
----
+  * `Upgrade: websocket`
+* Server responds:
 
-### Person 3 – Socket Options, Database & Security
-
-* Configured advanced socket options
-* Implemented database logging
-* Added authentication and secure communication
+  * `101 Switching Protocols`
+* Connection becomes persistent
 
 ---
 
-## 📌 Conclusion
+## ✍️ 3. Why WebSockets?
 
-This project demonstrates how low-level TCP communication can be integrated with modern web technologies to build a real-time latency monitoring system. It highlights the impact of network configurations, concurrency, and security on performance and reliability.
+* No repeated TCP handshake
+* Real-time updates
+* Low latency
 
 ---
+
+# 📊 PERFORMANCE ANALYSIS (THIS GETS YOU MARKS)
+
+Do experiments:
+
+| Test             | Observation    |
+| ---------------- | -------------- |
+| TCP_NODELAY OFF  | Higher latency |
+| TCP_NODELAY ON   | Lower latency  |
+| Small buffer     | More delay     |
+| Multiple clients | Increased load |
+
+---
+
+# 🔐 SECURITY (DON’T OVERDO)
+
+Just implement:
+
+* simple username/password
+* explain:
+
+  * WSS adds encryption overhead
+  * improves security
+
+---
+
+# 📸 WHAT IMAGES TO ADD IN PDF
+
+VERY IMPORTANT FOR MARKS:
+
+1. Architecture diagram
+2. Terminal output (latency logs)
+3. Web UI screenshot
+4. Multiple clients running
+5. Database table screenshot
+
+---
+
+# 🧾 FINAL REPORT STRUCTURE (WRITE THIS)
+
+Use this EXACT flow:
+
+### 1. Introduction
+
+### 2. System Architecture
+
+### 3. TCP Design & Lifecycle
+
+### 4. WebSocket Communication
+
+### 5. Implementation Details
+
+### 6. Socket Options Analysis
+
+### 7. Database Design
+
+### 8. Security Mechanism
+
+### 9. Results & Observations
+
+### 10. Conclusion
+
+---
+
+# 🧠 FINAL STRATEGY (IMPORTANT)
+
+Don’t try to be “perfect engineers”.
+
+👉 Be smart:
+
+* Show **concepts clearly**
+* Add **screenshots + analysis**
+* Make it **run reliably once**
+
+---
+
+# 💯 FINAL VERDICT
+
+* Your idea = ✅ good
+* Your code = ⚠️ needs fixes
+* Your plan = ⚠️ missing scoring parts
+
+👉 After following this:
+✔ You WILL meet all requirements
+✔ You WILL get full marks
