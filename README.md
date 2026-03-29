@@ -23,25 +23,10 @@ Must include:
 * Must be runnable
 * Dynamic inputs (NOT hardcoded)
 
----
 
-# ⚠️ Biggest mistake to avoid
 
-Your current code + plan is:
+# ✅ FINAL TECH STACK 
 
-✔ Good idea
-❌ Too low-level + incomplete for marks
-
-👉 If you continue blindly, you’ll:
-
-* waste time fixing C issues
-* still lose marks in theory + UI + analysis
-
----
-
-# ✅ FINAL TECH STACK (use this — don’t overthink)
-
-### 🔥 Recommended (BEST for marks + speed)
 
 | Component        | Tech                       |
 | ---------------- | -------------------------- |
@@ -51,15 +36,9 @@ Your current code + plan is:
 | Database         | SQLite                     |
 | OS               | Linux (or WSL)             |
 
-👉 Why this works:
 
-* You satisfy **“TCP in C” requirement**
-* You avoid building WebSockets in C (painful)
-* Python handles real-time easily
 
----
-
-# 🔧 SYSTEM ARCHITECTURE (final version)
+# 🔧 SYSTEM ARCHITECTURE 
 
 ```
 TCP Client (C)
@@ -123,44 +102,6 @@ Web Browser UI (HTML/JS)
 
 ---
 
-# 🔧 FIX YOUR CURRENT CODE (IMPORTANT)
-
-## ❌ Problems:
-
-* Windows-only → risky
-* No socket options
-* No partial recv handling
-
----
-
-## ✅ Minimum fixes you MUST add
-
-### Add socket options in server:
-
-```c
-int opt = 1;
-setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-int flag = 1;
-setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag));
-```
-
----
-
-### Fix recv (important concept)
-
-TCP is stream-based — not guaranteed full read.
-
-```c
-int total = 0;
-while (total < sizeof(double)) {
-    int n = recv(sock, ((char*)&timestamp) + total, sizeof(double) - total, 0);
-    if (n <= 0) break;
-    total += n;
-}
-```
-
----
 
 ### Make client dynamic
 
@@ -286,24 +227,3 @@ Use this EXACT flow:
 
 ---
 
-# 🧠 FINAL STRATEGY (IMPORTANT)
-
-Don’t try to be “perfect engineers”.
-
-👉 Be smart:
-
-* Show **concepts clearly**
-* Add **screenshots + analysis**
-* Make it **run reliably once**
-
----
-
-# 💯 FINAL VERDICT
-
-* Your idea = ✅ good
-* Your code = ⚠️ needs fixes
-* Your plan = ⚠️ missing scoring parts
-
-👉 After following this:
-✔ You WILL meet all requirements
-✔ You WILL get full marks
