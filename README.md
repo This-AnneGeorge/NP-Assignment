@@ -1,6 +1,4 @@
-Here is your cleaned **README without emojis**, properly formatted and ready to use:
 
----
 
 # Web-Based Network Latency Tester
 
