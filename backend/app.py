@@ -1,20 +1,19 @@
 import eventlet
 eventlet.monkey_patch()
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, session
 from flask_socketio import SocketIO
-import socket
-import struct
-import time
-import sqlite3
+import socket, struct, time, sqlite3
 
 app = Flask(__name__)
+app.secret_key = "secret123"   # needed for login session
 socketio = SocketIO(app, async_mode='eventlet')
 
 # DB setup
 conn = sqlite3.connect('latency.db', check_same_thread=False)
 cursor = conn.cursor()
 
+# tables
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS latency_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,8 +21,15 @@ CREATE TABLE IF NOT EXISTS latency_logs (
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 """)
-conn.commit()
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT
+)
+""")
+
+conn.commit()
 
 def tcp_listener():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,9 +45,7 @@ def tcp_listener():
 
             latency = (recv_time - send_time) * 1000
 
-            print("Latency:", latency)
-
-            # store in DB
+            # store
             cursor.execute("INSERT INTO latency_logs (latency) VALUES (?)", (latency,))
             conn.commit()
 
@@ -50,14 +54,56 @@ def tcp_listener():
 
             time.sleep(1)
 
-        except Exception as e:
-            print("Error:", e)
+        except:
             break
 
 
+
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    if 'user' in session:
+        return render_template('index.html')
+    return redirect('/login')
+
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (username,password))
+        user = cursor.fetchone()
+
+        if user:
+            session['user'] = username
+            return redirect('/')
+        else:
+            return "Invalid credentials"
+
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET','POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        try:
+            cursor.execute("INSERT INTO users VALUES (?,?)", (username,password))
+            conn.commit()
+            return redirect('/login')
+        except:
+            return "User already exists"
+
+    return render_template('register.html')
+
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/login')
 
 
 if __name__ == "__main__":
