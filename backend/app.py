@@ -9,14 +9,14 @@ import time
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = "secret123"   # 🔐 added for session
+app.secret_key = "secret123"  
 socketio = SocketIO(app, async_mode='eventlet')
 
-# DB setup
+
 conn = sqlite3.connect('latency.db', check_same_thread=False)
 cursor = conn.cursor()
 
-# existing table (unchanged)
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS latency_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS latency_logs (
 )
 """)
 
-# 🔐 NEW: users table
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
 )
 """)
 
-# 🔐 insert default user
+
 cursor.execute("INSERT OR IGNORE INTO users VALUES (?, ?)", ("admin", "1234"))
 
 conn.commit()
@@ -55,11 +55,11 @@ def tcp_listener():
 
             print("Latency:", latency)
 
-            # store in DB
+         
             cursor.execute("INSERT INTO latency_logs (latency) VALUES (?)", (latency,))
             conn.commit()
 
-            # send to UI
+         
             socketio.emit('latency', {'value': latency})
 
             time.sleep(1)
@@ -69,7 +69,7 @@ def tcp_listener():
             break
 
 
-# 🔐 NEW: login route
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -88,7 +88,6 @@ def login():
     return render_template('login.html')
 
 
-# 🔐 MODIFIED: protect main page
 @app.route('/')
 def index():
     if 'user' not in session:
@@ -96,7 +95,6 @@ def index():
     return render_template('index.html')
 
 
-# 🔐 OPTIONAL: logout
 @app.route('/logout')
 def logout():
     session.pop('user', None)
